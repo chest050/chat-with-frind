@@ -3,106 +3,93 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MyChat - Signup</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>Signup - MyChat</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      padding: 0;
-      margin: 0;
-      font-family: 'Roboto', sans-serif;
-    }
-
     body {
-      background: linear-gradient(135deg, #43cea2, #185a9d);
+      background: linear-gradient(to right, #434343, #000000);
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      font-family: 'Roboto', sans-serif;
     }
-
-    .signup-container {
+    .signup-box {
       background: white;
+      color: #333;
       padding: 40px;
       border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
       width: 90%;
       max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .signup-box h2 {
+      margin-bottom: 20px;
+      color: #3f5efb;
       text-align: center;
     }
-
-    .signup-container h2 {
-      margin-bottom: 20px;
-      color: #185a9d;
-    }
-
-    .signup-container input {
+    .signup-box input {
       width: 100%;
       padding: 12px;
       margin: 10px 0;
+      font-size: 16px;
       border: 1px solid #ccc;
       border-radius: 8px;
-      font-size: 16px;
     }
-
-    .signup-container button {
+    .signup-box button {
       width: 100%;
       padding: 12px;
-      background: #185a9d;
-      color: white;
-      font-size: 16px;
+      background: #3f5efb;
       border: none;
       border-radius: 8px;
+      color: white;
+      font-size: 16px;
       cursor: pointer;
-      margin-top: 10px;
     }
-
-    .signup-container button:hover {
-      background: #1273c4;
+    .signup-box button:hover {
+      background: #2c3ee6;
     }
   </style>
 </head>
 <body>
-  <div class="signup-container">
+  <div class="signup-box">
     <h2>Create an Account</h2>
     <input type="text" id="newId" placeholder="Choose your ID" />
     <input type="password" id="newPassword" placeholder="Choose a password" />
-    <button onclick="signup()">Signup</button>
+    <button onclick="signup()">Create Account</button>
   </div>
 
   <script>
-    // 🔧 ضع إعدادات Firebase هنا:
     const firebaseConfig = {
-      apiKey: "AIzaSyCtyC6_SNIZlHgYUX9-LSxvEZKRtasHWM",
-      authDomain: "mychat-977be.firebaseapp.com",
-      databaseURL: "https://mychat-977be-default-rtdb.firebaseio.com",
-      projectId: "mychat-977be",
-      storageBucket: "mychat-977be.appspot.com",
-      messagingSenderId: "528025943061",
-      appId: "1:528025943061:web:4163aae16f98bb8e610"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
 
-    // تهيئة Firebase
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = firebase.firestore();
 
     function signup() {
       const newId = document.getElementById('newId').value.trim();
       const newPassword = document.getElementById('newPassword').value.trim();
 
       if (newId && newPassword) {
-        db.ref("users/" + newId).set({
+        db.collection("users").doc(newId).set({
           password: newPassword
         }).then(() => {
-          alert("🎉 تم إنشاء الحساب بنجاح! سيتم تحويلك لتسجيل الدخول.");
+          alert("Account created! Redirecting to login...");
           window.location.href = "index.html";
         }).catch((error) => {
-          alert("فشل إنشاء الحساب: " + error.message);
+          alert("Signup failed: " + error.message);
         });
       } else {
-        alert("يرجى ملء جميع الحقول.");
+        alert("Please fill in both fields.");
       }
     }
   </script>
