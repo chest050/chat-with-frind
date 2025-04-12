@@ -1,19 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MyChat - Chat</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyChat - Private Chat</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: linear-gradient(to right, #434343, #000000);
+      color: white;
+    }
+    header {
+      background: #3f5efb;
+      padding: 15px 20px;
+      font-size: 22px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .friend-select {
+      padding: 10px 20px;
+      background: #2c2c2c;
+      display: flex;
+      justify-content: center;
+    }
+    .friend-select select {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      background: #fff;
+      color: #333;
+    }
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .message {
+      max-width: 70%;
+      padding: 12px;
+      border-radius: 15px;
+      background: #444;
+      color: #fff;
+      align-self: flex-start;
+      word-wrap: break-word;
+    }
+    .own {
+      background: #3f5efb;
+      align-self: flex-end;
+    }
+    .input-box {
+      display: flex;
+      padding: 15px 20px;
+      background: #2c2c2c;
+    }
+    .input-box input {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    .input-box button {
+      padding: 12px 20px;
+      background: #3f5efb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .input-box button:hover {
+      background: #2c3ee6;
+    }
+    #logoutBtn {
+      background: red;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    @media (max-width: 600px) {
+      .chat-box {
+        padding: 10px;
+      }
+      .input-box input, .input-box button {
+        font-size: 14px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <header>Welcome to MyChat</header>
-  <div class="search-bar">
-    <input type="text" placeholder="Search friends..." />
+  <header>
+    <span>MyChat</span>
+    <button id="logoutBtn">Logout</button>
+  </header>
+
+  <div class="friend-select">
+    <select id="friendList">
+      <option value="">Select a friend to chat</option>
+    </select>
   </div>
-  <div class="chat-container">
-    <p class="chat-message">Chat UI coming soon...</p>
+
+  <div class="chat-box" id="chatBox"></div>
+
+  <div class="input-box">
+    <input type="text" id="messageInput" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
   </div>
+
+  <audio id="notifySound" src="https://notificationsounds.com/storage/sounds/file-sounds-1143-pristine.mp3" preload="auto"></audio>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const currentUser = localStorage.getItem("mychatUserId");
+    if (!currentUser) window.location.href = "index.html";
+
+    const chatBox = document.getElementById("chatBox");
+    const friendList = document.getElementById("friendList");
+    const notifySound = document.getElementById("notifySound");
+    let currentChatId = "";
+
+    document.getElementById("logoutBtn").onclick = function() {
+      localStorage.removeItem("mychatUserId");
+      window.location.href = "index.html";
+    };
+
+    db.ref("users").once("value").then(snapshot => {
+      snapshot.forEach(child => {
+        const friendId = child.key;
+        if (friendId !== currentUser) {
+          const option = document.createElement("option");
+          option.value = friendId;
+          option.textContent = friendId;
+          friendList.appendChild(option);
+        }
+      });
+    });
+
+    friendList.addEventListener("change", () => {
+      const friendId = friendList.value;
+      if (!friendId) return;
+      currentChatId = [currentUser, friendId].sort().join("_");
+      chatBox.innerHTML = "";
+
+      db.ref("messages/" + currentChatId).off();
+      db.ref("messages/" + currentChatId).on("child_added", (snapshot) => {
+        const data = snapshot.val();
+        const div = document.createElement("div");
+        div.classList.add("message");
+        if (data.sender === currentUser) div.classList.add("own");
+        div.textContent = `${data.sender}: ${data.text}`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        if (data.sender !== currentUser) notifySound.play();
+      });
+    });
+
+    function sendMessage() {
+      const msg = document.getElementById("messageInput").value.trim();
+      if (msg && currentChatId) {
+        const newMsg = db.ref("messages/" + currentChatId).push();
+        newMsg.set({
+          sender: currentUser,
+          text: msg,
+          timestamp: Date.now()
+        });
+        document.getElementById("messageInput").value = "";
+      }
+    }
+  </script>
 </body>
 </html>

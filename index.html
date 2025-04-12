@@ -5,27 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MyChat - Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #fc466b, #3f5efb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .login-container {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-container h2 {
+      margin-bottom: 20px;
+      color: #3f5efb;
+    }
+
+    .login-container input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .login-container button {
+      width: 100%;
+      padding: 12px;
+      background: #3f5efb;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .login-container button:hover {
+      background: #3148d4;
+    }
+
+    .login-container a {
+      display: block;
+      margin-top: 15px;
+      color: #3f5efb;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .login-container a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-  <div class="signup-container">
-    <h2>Login</h2>
-    <input type="text" id="userId" placeholder="Your ID" />
-    <input type="password" id="password" placeholder="Password" />
+  <div class="login-container">
+    <h2>Login to MyChat</h2>
+    <input type="text" id="loginId" placeholder="Enter your ID" />
+    <input type="password" id="loginPassword" placeholder="Enter your password" />
     <button onclick="login()">Login</button>
-    <p style="margin-top: 15px;">Don't have an account? <a href="signup.html">Signup</a></p>
+    <a href="signup.html">Don't have an account? Sign up</a>
   </div>
-  <script>
-    function login() {
-      const userId = document.getElementById('userId').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const storedId = localStorage.getItem('userId');
-      const storedPass = localStorage.getItem('password');
 
-      if (userId === storedId && password === storedPass) {
-        window.location.href = "chat.html";
+  <script>
+    // إعدادات Firebase (نفس الإعدادات من signup.html)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtyC6_SNIZlHgYUX9-LSxvEZKRtasHWM",
+      authDomain: "mychat-977be.firebaseapp.com",
+      databaseURL: "https://mychat-977be-default-rtdb.firebaseio.com",
+      projectId: "mychat-977be",
+      storageBucket: "mychat-977be.appspot.com",
+      messagingSenderId: "528025943061",
+      appId: "1:528025943061:web:4163aae16f98bb8e610"
+    };
+
+    // تهيئة Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function login() {
+      const id = document.getElementById('loginId').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+
+      if (id && password) {
+        db.ref("users/" + id).get().then((snapshot) => {
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            if (userData.password === password) {
+              alert("🎉 Login successful!");
+              localStorage.setItem("mychatUserId", id);
+              window.location.href = "chat.html";
+            } else {
+              alert("❌ Wrong password.");
+            }
+          } else {
+            alert("❌ User not found.");
+          }
+        }).catch((error) => {
+          alert("Login failed: " + error.message);
+        });
       } else {
-        alert("Invalid ID or password!");
+        alert("Please enter both ID and password.");
       }
     }
   </script>

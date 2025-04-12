@@ -5,7 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MyChat - Signup</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #43cea2, #185a9d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .signup-container {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .signup-container h2 {
+      margin-bottom: 20px;
+      color: #185a9d;
+    }
+
+    .signup-container input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .signup-container button {
+      width: 100%;
+      padding: 12px;
+      background: #185a9d;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .signup-container button:hover {
+      background: #1273c4;
+    }
+  </style>
 </head>
 <body>
   <div class="signup-container">
@@ -16,17 +73,36 @@
   </div>
 
   <script>
+    // 🔧 ضع إعدادات Firebase هنا:
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtyC6_SNIZlHgYUX9-LSxvEZKRtasHWM",
+      authDomain: "mychat-977be.firebaseapp.com",
+      databaseURL: "https://mychat-977be-default-rtdb.firebaseio.com",
+      projectId: "mychat-977be",
+      storageBucket: "mychat-977be.appspot.com",
+      messagingSenderId: "528025943061",
+      appId: "1:528025943061:web:4163aae16f98bb8e610"
+    };
+
+    // تهيئة Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     function signup() {
       const newId = document.getElementById('newId').value.trim();
       const newPassword = document.getElementById('newPassword').value.trim();
 
       if (newId && newPassword) {
-        localStorage.setItem('userId', newId);
-        localStorage.setItem('password', newPassword);
-        alert("Account created! You can now login.");
-        window.location.href = "index.html";
+        db.ref("users/" + newId).set({
+          password: newPassword
+        }).then(() => {
+          alert("🎉 تم إنشاء الحساب بنجاح! سيتم تحويلك لتسجيل الدخول.");
+          window.location.href = "index.html";
+        }).catch((error) => {
+          alert("فشل إنشاء الحساب: " + error.message);
+        });
       } else {
-        alert("Please fill all fields.");
+        alert("يرجى ملء جميع الحقول.");
       }
     }
   </script>
