@@ -1,204 +1,246 @@
+<!-- صفحة الدردشة مع إرسال نصوص وصور + حذف + بحث + صوت تنبيه -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MyChat - Private Chat</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MyChat</title>
+  <link rel="stylesheet" href="css/style.css" />
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Roboto', sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      background: linear-gradient(to right, #434343, #000000);
-      color: white;
-    }
-    header {
-      background: #3f5efb;
-      padding: 15px 20px;
-      font-size: 22px;
-      font-weight: bold;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .friend-select {
-      padding: 10px 20px;
-      background: #2c2c2c;
-      display: flex;
-      justify-content: center;
-    }
-    .friend-select select {
-      padding: 10px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-      background: #fff;
-      color: #333;
-    }
-    .chat-box {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .message {
-      max-width: 70%;
-      padding: 12px;
-      border-radius: 15px;
-      background: #444;
-      color: #fff;
-      align-self: flex-start;
-      word-wrap: break-word;
-    }
-    .own {
-      background: #3f5efb;
-      align-self: flex-end;
-    }
-    .input-box {
-      display: flex;
-      padding: 15px 20px;
-      background: #2c2c2c;
-    }
-    .input-box input {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      margin-right: 10px;
-    }
-    .input-box button {
-      padding: 12px 20px;
-      background: #3f5efb;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .input-box button:hover {
-      background: #2c3ee6;
-    }
-    #logoutBtn {
-      background: red;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    @media (max-width: 600px) {
-      .chat-box {
-        padding: 10px;
-      }
-      .input-box input, .input-box button {
-        font-size: 14px;
-      }
-    }
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/firebase-config.js"></script>
 </head>
 <body>
-  <header>
-    <span>MyChat</span>
-    <button id="logoutBtn">Logout</button>
-  </header>
 
-  <div class="friend-select">
-    <select id="friendList">
-      <option value="">Select a friend to chat</option>
-    </select>
+  <div class="chat-header">
+    <h2>MyChat</h2>
+    <div>
+      <button onclick="downloadChat()">📥 تحميل المحادثة</button>
+      <button onclick="showProfile()">📋 معلوماتي</button>
+      <button onclick="logout()">تسجيل خروج</button>
+    </div>
   </div>
 
-  <div class="chat-box" id="chatBox"></div>
+  <div class="main-container">
+    <div class="friends-list" id="friendsList">
+      <h3>أصدقائي</h3>
+      <ul id="myFriendsList"></ul>
+      <input type="text" id="friendIdInput" placeholder="أدخل معرف الصديق">
+      <button onclick="addFriend()">➕ إضافة صديق</button>
+      <p id="addFriendMessage" style="color: yellow;"></p>
+    </div>
 
-  <div class="input-box">
-    <input type="text" id="messageInput" placeholder="Type your message...">
-    <button onclick="sendMessage()">Send</button>
+    <div class="chat-container">
+      <input type="text" id="searchInput" placeholder="🔍 ابحث في الرسائل..." oninput="filterMessages()" class="search-bar">
+      <button onclick="deleteAllMessages()" class="delete-chat-button">🗑️ حذف المحادثة</button>
+
+      <div class="chat-box" id="chatBox"></div>
+
+      <div class="chat-actions">
+        <input type="file" id="imageInput" accept="image/*">
+        <textarea id="messageInput" placeholder="اكتب رسالة..." rows="2"></textarea>
+        <button onclick="sendMessage()">إرسال</button>
+      </div>
+    </div>
   </div>
 
-  <audio id="notifySound" src="https://notificationsounds.com/storage/sounds/file-sounds-1143-pristine.mp3" preload="auto"></audio>
+  <!-- نافذة معلومات المستخدم -->
+  <div class="profile-sidebar" id="profileSidebar" style="display:none;">
+    <button onclick="hideProfile()" class="close-btn">❌</button>
+    <h3>معلوماتي</h3>
+    <p><strong>الاسم:</strong> <span id="profileName"></span></p>
+    <p><strong>المعرف:</strong> <span id="profileId"></span></p>
+    <p><strong>الحالة:</strong> <span id="profileStatus"></span></p>
+  </div>
+
+  <audio id="notificationSound" src="notification.mp3" preload="auto"></audio>
 
   <script>
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-
-     apiKey: "AIzaSyCTcY6_sNlZIgHYJUx9-L5xvEZKRtasHVM",
-  authDomain: "mychat-977be.firebaseapp.com",
-  projectId: "mychat-977be",
-  storageBucket: "mychat-977be.firebasestorage.app",
-  messagingSenderId: "520205943601",
-  appId: "1:520205943601:web:416a33aae16ff98bb8e610",
-  measurementId: "G-BG439KPR5M"
-};
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
 
-    const currentUser = localStorage.getItem("mychatUserId");
-    if (!currentUser) window.location.href = "index.html";
+    const userId = localStorage.getItem("mychatUserId");
+    if (!userId) location.href = "index.html";
 
     const chatBox = document.getElementById("chatBox");
-    const friendList = document.getElementById("friendList");
-    const notifySound = document.getElementById("notifySound");
+    const messageInput = document.getElementById("messageInput");
+    const imageInput = document.getElementById("imageInput");
+    const searchInput = document.getElementById("searchInput");
+    const notificationSound = document.getElementById("notificationSound");
     let currentChatId = "";
 
-    document.getElementById("logoutBtn").onclick = function() {
+    function logout() {
+      db.collection("users").doc(userId).update({ status: "offline" });
       localStorage.removeItem("mychatUserId");
-      window.location.href = "index.html";
-    };
-
-    db.ref("users").once("value").then(snapshot => {
-      snapshot.forEach(child => {
-        const friendId = child.key;
-        if (friendId !== currentUser) {
-          const option = document.createElement("option");
-          option.value = friendId;
-          option.textContent = friendId;
-          friendList.appendChild(option);
-        }
-      });
-    });
-
-    friendList.addEventListener("change", () => {
-      const friendId = friendList.value;
-      if (!friendId) return;
-      currentChatId = [currentUser, friendId].sort().join("_");
-      chatBox.innerHTML = "";
-
-      db.ref("messages/" + currentChatId).off();
-      db.ref("messages/" + currentChatId).on("child_added", (snapshot) => {
-        const data = snapshot.val();
-        const div = document.createElement("div");
-        div.classList.add("message");
-        if (data.sender === currentUser) div.classList.add("own");
-        div.textContent = `${data.sender}: ${data.text}`;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        if (data.sender !== currentUser) notifySound.play();
-      });
-    });
+      location.href = "index.html";
+    }
 
     function sendMessage() {
-      const msg = document.getElementById("messageInput").value.trim();
-      if (msg && currentChatId) {
-        const newMsg = db.ref("messages/" + currentChatId).push();
-        newMsg.set({
-          sender: currentUser,
-          text: msg,
-          timestamp: Date.now()
+      const text = messageInput.value.trim();
+      const file = imageInput.files[0];
+
+      if (!text && !file || !currentChatId) return;
+
+      const messageData = {
+        sender: userId,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if (text) messageData.text = text;
+
+      if (file) {
+        const storageRef = storage.ref(`images/${Date.now()}_${file.name}`);
+        storageRef.put(file).then(snapshot => {
+          snapshot.ref.getDownloadURL().then(url => {
+            messageData.imageUrl = url;
+            db.collection("messages").doc(currentChatId).collection("chat").add(messageData);
+          });
         });
-        document.getElementById("messageInput").value = "";
+      } else {
+        db.collection("messages").doc(currentChatId).collection("chat").add(messageData);
+      }
+
+      messageInput.value = "";
+      imageInput.value = "";
+    }
+
+    function deleteMessage(id) {
+      if (confirm("هل تريد حذف هذه الرسالة؟")) {
+        db.collection("messages").doc(currentChatId).collection("chat").doc(id).delete();
       }
     }
+
+    function deleteAllMessages() {
+      if (!currentChatId) return alert("لم يتم تحديد محادثة.");
+      if (!confirm("هل تريد حذف المحادثة بالكامل؟")) return;
+
+      db.collection("messages")
+        .doc(currentChatId)
+        .collection("chat")
+        .get()
+        .then(snapshot => {
+          const batch = db.batch();
+          snapshot.forEach(doc => batch.delete(doc.ref));
+          return batch.commit();
+        })
+        .then(() => {
+          alert("تم حذف المحادثة بالكامل.");
+        });
+    }
+
+    function displayMessage(doc) {
+      const data = doc.data();
+      const msg = document.createElement("div");
+      msg.className = "message";
+
+      if (data.sender === userId) {
+        msg.innerHTML += `<button onclick="deleteMessage('${doc.id}')">🗑️</button>`;
+      }
+
+      if (data.text) msg.innerHTML += `<p>${data.text}</p>`;
+      if (data.imageUrl) msg.innerHTML += `<img src="${data.imageUrl}" width="200">`;
+      msg.innerHTML += `<small>${data.sender}</small>`;
+
+      msg.dataset.text = data.text || "";
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      if (data.sender !== userId) notificationSound.play();
+    }
+
+    function filterMessages() {
+      const term = searchInput.value.toLowerCase();
+      const messages = chatBox.querySelectorAll(".message");
+      messages.forEach(msg => {
+        const txt = msg.dataset.text.toLowerCase();
+        msg.style.display = txt.includes(term) ? "block" : "none";
+      });
+    }
+
+    function downloadChat() {
+      const msgs = [...chatBox.querySelectorAll(".message")].map(m => m.innerText).join("\n---\n");
+      const blob = new Blob([msgs], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "chat.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function startChat(friendId) {
+      currentChatId = [userId, friendId].sort().join("_");
+      db.collection("messages")
+        .doc(currentChatId)
+        .collection("chat")
+        .orderBy("timestamp")
+        .onSnapshot(snapshot => {
+          chatBox.innerHTML = "";
+          snapshot.forEach(doc => displayMessage(doc));
+        });
+    }
+
+    function showProfile() {
+      db.collection("users").doc(userId).get().then(doc => {
+        if (doc.exists) {
+          document.getElementById("profileName").textContent = doc.data().name || "غير معروف";
+          document.getElementById("profileId").textContent = userId;
+          document.getElementById("profileStatus").textContent = doc.data().status || "غير معروف";
+          document.getElementById("profileSidebar").style.display = "block";
+        }
+      });
+    }
+
+    function hideProfile() {
+      document.getElementById("profileSidebar").style.display = "none";
+    }
+
+    function addFriend() {
+      const friendId = document.getElementById("friendIdInput").value.trim();
+      const msg = document.getElementById("addFriendMessage");
+
+      if (!friendId || friendId === userId) {
+        msg.textContent = "معرف غير صالح.";
+        return;
+      }
+
+      db.collection("users").doc(friendId).get().then(doc => {
+        if (!doc.exists) {
+          msg.textContent = "لا يوجد مستخدم بهذا المعرف.";
+        } else {
+          const friendRef = db.collection("users").doc(userId).collection("friends").doc(friendId);
+          friendRef.get().then(friendDoc => {
+            if (friendDoc.exists) {
+              msg.textContent = "الصديق مضاف مسبقًا.";
+            } else {
+              friendRef.set({ addedAt: new Date() }).then(() => {
+                msg.textContent = "تمت إضافة الصديق ✅";
+                loadMyFriends();
+                document.getElementById("friendIdInput").value = "";
+              });
+            }
+          });
+        }
+      });
+    }
+
+    function loadMyFriends() {
+      const myFriendsList = document.getElementById("myFriendsList");
+      myFriendsList.innerHTML = "";
+
+      db.collection("users").doc(userId).collection("friends").get().then(snapshot => {
+        snapshot.forEach(doc => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            ${doc.id}
+            <button onclick="startChat('${doc.id}')">💬</button>
+          `;
+          myFriendsList.appendChild(li);
+        });
+      });
+    }
+
+    loadMyFriends();
   </script>
 </body>
 </html>
